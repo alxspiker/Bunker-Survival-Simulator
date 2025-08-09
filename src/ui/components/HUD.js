@@ -2,76 +2,110 @@ import { loadState } from '../../storage.js';
 import { getProductionPerHour } from '../../state.js';
 import { formatDuration, timeToBoundary } from '../../utils/time.js';
 
-export function HUD(state) {
-  const wrap = document.createElement('div');
-  wrap.className = 'card hud';
+export function HUD() {
+  const card = document.createElement('div');
+  card.className = 'card hud-card';
 
-  const makeTag = (label, value) => {
-    const el = document.createElement('div');
-    el.className = 'tag';
-    el.innerHTML = `<span>${label}</span> <strong>${value}</strong>`;
-    return el;
-  };
+  const stats = document.createElement('div');
+  stats.className = 'stats-grid';
 
-  const resources = document.createElement('div');
-  resources.className = 'hud';
+  const badges = document.createElement('div');
+  badges.className = 'badge-row';
 
-  const timers = document.createElement('div');
-  timers.className = 'list';
-
-  const timersTitle = document.createElement('div');
-  timersTitle.className = 'h2';
-  timersTitle.textContent = 'Time Until Empty/Full';
-
-  const update = () => {
+  function render() {
     const s = loadState();
     const r = s.resources;
     const caps = s.capacities || { food: Infinity, water: Infinity, power: Infinity };
     const perHour = getProductionPerHour(s);
 
-    resources.innerHTML = '';
-    resources.append(
-      makeTag('Food', `${r.food.toFixed(1)} (${fmtRate(perHour.food)}/h)`),
-      makeTag('Water', `${r.water.toFixed(1)} (${fmtRate(perHour.water)}/h)`),
-      makeTag('Power', `${r.power.toFixed(1)} (${fmtRate(perHour.power)}/h)`),
-      makeTag('Seeds', r.seeds.toFixed?.(1) ?? r.seeds),
-      makeTag('Scrap', s.resources.scrap),
-      makeTag('Population', s.resources.population),
-      makeTag('Morale', s.resources.morale)
+    stats.innerHTML = '';
+
+    stats.append(
+      statTile({
+        icon: '🌾',
+        label: 'Food',
+        value: r.food,
+        rate: perHour.food,
+        cap: caps.food,
+      }),
+      statTile({
+        icon: '💧',
+        label: 'Water',
+        value: r.water,
+        rate: perHour.water,
+        cap: caps.water,
+      }),
+      statTile({
+        icon: '⚡',
+        label: 'Power',
+        value: r.power,
+        rate: perHour.power,
+        cap: caps.power,
+      })
     );
 
-    timers.innerHTML = '';
-    timers.append(
-      timerLine('Food', r.food, perHour.food, 0, caps.food),
-      timerLine('Water', r.water, perHour.water, 0, caps.water),
-      timerLine('Power', r.power, perHour.power, 0, caps.power)
+    badges.innerHTML = '';
+    badges.append(
+      badge('🌱 Seeds', fmtNum(r.seeds)),
+      badge('🔧 Scrap', fmtNum(r.scrap)),
+      badge('👥 Population', String(r.population)),
+      badge('🙂 Morale', String(r.morale))
     );
-  };
+  }
 
-  update();
-  wrap.appendChild(resources);
-  wrap.appendChild(document.createElement('hr')).className = 'sep';
-  wrap.appendChild(timersTitle);
-  wrap.appendChild(timers);
+  render();
+  document.addEventListener('game:tick', render);
 
-  document.addEventListener('game:tick', update);
+  card.appendChild(stats);
+  card.appendChild(badges);
+  return card;
+}
+
+function statTile({ icon, label, value, rate, cap }) {
+  const wrap = document.createElement('div');
+  wrap.className = 'stat';
+
+  const head = document.createElement('div');
+  head.className = 'stat-head';
+  head.innerHTML = `<span class="stat-icon">${icon}</span><span class="stat-label">${label}</span>`;
+
+  const val = document.createElement('div');
+  val.className = 'stat-value';
+  val.textContent = `${value.toFixed(1)}`;
+
+  const meta = document.createElement('div');
+  meta.className = 'stat-meta';
+  const sign = rate > 0 ? '+' : '';
+  meta.textContent = `${sign}${rate.toFixed(2)}/h`;
+
+  const bar = document.createElement('div');
+  bar.className = 'capacity-bar';
+  const span = document.createElement('span');
+  const pct = cap && isFinite(cap) && cap > 0 ? Math.max(0, Math.min(1, value / cap)) : 0;
+  span.style.width = `${Math.round(pct * 100)}%`;
+  bar.appendChild(span);
+
+  const tte = document.createElement('div');
+  tte.className = 'stat-tte';
+  const ms = timeToBoundary(value, rate, 0, cap);
+  let tteText = '—';
+  if (rate > 0 && isFinite(cap) && value < cap) tteText = `full in ${formatDuration(ms)}`;
+  else if (rate < 0 && value > 0) tteText = `empty in ${formatDuration(ms)}`;
+  else if (rate > 0 && isFinite(cap) && value >= cap) tteText = 'at capacity';
+  else if (rate < 0 && value <= 0) tteText = 'depleted';
+  tte.textContent = tteText;
+
+  wrap.append(head, val, meta, bar, tte);
   return wrap;
 }
 
-function timerLine(label, current, rate, min, max) {
-  const item = document.createElement('div');
-  item.className = 'item';
-  const tMs = timeToBoundary(current, rate, min, max);
-  let txt = 'stable';
-  if (rate > 0 && current < max) txt = `full in ${formatDuration(tMs)}`;
-  else if (rate < 0 && current > min) txt = `empty in ${formatDuration(tMs)}`;
-  else if (rate > 0 && current >= max) txt = 'at capacity';
-  else if (rate < 0 && current <= min) txt = 'depleted';
-  item.innerHTML = `<div><strong>${label}</strong></div><div class="small">${txt}</div>`;
-  return item;
+function badge(label, value) {
+  const el = document.createElement('div');
+  el.className = 'badge';
+  el.innerHTML = `<span>${label}</span><strong>${value}</strong>`;
+  return el;
 }
 
-function fmtRate(x) {
-  const sign = x > 0 ? '+' : '';
-  return `${sign}${x.toFixed(2)}`;
+function fmtNum(n) {
+  return typeof n === 'number' && n % 1 !== 0 ? n.toFixed(1) : String(n);
 }
