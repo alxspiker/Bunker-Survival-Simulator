@@ -1,6 +1,6 @@
 import { loadState, saveState } from '../storage.js';
 import { nowMs } from '../utils/time.js';
-import { addLog, clampResources, getProductionPerHour, getRoomLevel } from '../state.js';
+import { addLog, clampResources, getProductionPerHour, getRoomLevel, clampAll } from '../state.js';
 
 let intervalId = null;
 
@@ -21,17 +21,14 @@ function processTick(isInitial) {
   const now = nowMs();
   const elapsedMs = Math.max(0, now - (state.lastUpdateAt || now));
 
-  // Cap offline progression to avoid extreme jumps (e.g., max 7 days per load)
   const cappedElapsedMs = isInitial ? Math.min(elapsedMs, 7 * 24 * 3600_000) : elapsedMs;
 
-  // Resource production/consumption over elapsed time
   const perHour = getProductionPerHour(state);
   const hoursElapsed = cappedElapsedMs / 3600_000;
   state.resources.food += perHour.food * hoursElapsed;
   state.resources.water += perHour.water * hoursElapsed;
   state.resources.power += perHour.power * hoursElapsed;
 
-  // Process tasks (construction, planting, crop growth, upgrades, maintenance, recruit, scout)
   const completed = [];
   for (const task of state.tasks) {
     if (task.endsAt <= now) completed.push(task);
@@ -41,12 +38,11 @@ function processTick(isInitial) {
     state.tasks = state.tasks.filter(t => !completed.includes(t));
   }
 
-  clampResources(state);
+  clampAll(state);
 
   state.lastUpdateAt = now;
   saveState(state);
 
-  // Also update UI bindings by dispatching a simple event
   document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
 }
 
@@ -58,6 +54,7 @@ export function forceCompleteTask(taskId) {
   const task = state.tasks[idx];
   applyTaskCompletion(state, task);
   state.tasks.splice(idx, 1);
+  clampAll(state);
   saveState(state);
   document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
 }
@@ -74,7 +71,6 @@ function applyTaskCompletion(state, task) {
   }
 
   if (task.type === 'planting') {
-    // Planting complete -> start a background 1-day growth task
     const now = nowMs();
     const growthDuration = 24 * 3600_000;
     state.tasks.push({
@@ -121,7 +117,6 @@ function applyTaskCompletion(state, task) {
   }
 
   if (task.type === 'scout') {
-    // Very simple loot table
     const roll = Math.random();
     if (roll < 0.6) {
       const scrap = 2 + Math.floor(Math.random() * 3);

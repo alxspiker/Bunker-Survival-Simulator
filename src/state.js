@@ -60,7 +60,8 @@ export function getRoomLevel(state, roomKey) {
 
 export function getPopulationCap(state) {
   const dormLevel = getRoomLevel(state, 'dormitory');
-  return 3 + dormLevel * 2;
+  const baseCap = 3 + dormLevel * 2;
+  return Math.max(baseCap, state.resources.population || 0);
 }
 
 export function getProductionPerHour(state) {
@@ -88,4 +89,12 @@ export function clampResources(state) {
   r.food = Math.min(Math.max(0, r.food), c.food);
   r.water = Math.min(Math.max(0, r.water), c.water);
   r.power = Math.min(Math.max(0, r.power), c.power);
+}
+
+export function clampAll(state) {
+  clampResources(state);
+  const r = state.resources;
+  r.morale = Math.max(0, Math.min(100, r.morale));
+  // Keep population integer and non-negative
+  r.population = Math.max(0, Math.round(r.population));
 }
