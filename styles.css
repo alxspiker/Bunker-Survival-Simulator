@@ -75,3 +75,17 @@ footer{margin-top:20px;color:var(--muted);font-size:12px}
 @media (min-width:720px){
   .stat{grid-column:span 4}
 }
+
+/* App layout with sidebar */
+.app-layout{display:grid;grid-template-columns:240px 1fr;gap:16px;margin-top:16px}
+.sidebar{background:#10161d;border:1px solid #1e2733;border-radius:12px;padding:10px;height:fit-content;position:sticky;top:12px}
+.sidebar-list{display:flex;flex-direction:column;gap:6px}
+.sidebar-item{display:flex;align-items:center;gap:10px;width:100%;background:#0d131a;color:var(--text);border:1px solid #1b2431;border-radius:10px;padding:10px 12px;text-align:left;cursor:pointer}
+.sidebar-item.active{border-color:var(--accent);background:#0f1720}
+.sidebar-item .si{font-size:16px}
+.content{min-height:200px}
+
+@media (max-width: 840px){
+  .app-layout{grid-template-columns:1fr}
+  .sidebar{position:static}
+}
