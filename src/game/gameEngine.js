@@ -50,6 +50,18 @@ function processTick(isInitial) {
   document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
 }
 
+export function forceCompleteTask(taskId) {
+  const state = loadState();
+  if (!state?.tasks?.length) return;
+  const idx = state.tasks.findIndex(t => t.id === taskId);
+  if (idx === -1) return;
+  const task = state.tasks[idx];
+  applyTaskCompletion(state, task);
+  state.tasks.splice(idx, 1);
+  saveState(state);
+  document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+}
+
 function applyTaskCompletion(state, task) {
   if (task.type === 'build-room') {
     const room = state.bunker.rooms[task.room];

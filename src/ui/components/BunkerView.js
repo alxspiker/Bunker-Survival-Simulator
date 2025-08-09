@@ -3,6 +3,7 @@ import { ActionsPanel } from './ActionsPanel.js';
 import { LogView } from './Log.js';
 import { loadState } from '../../storage.js';
 import { formatDuration, nowMs } from '../../utils/time.js';
+import { forceCompleteTask } from '../../game/gameEngine.js';
 
 export function renderGame(state) {
   const wrap = document.createElement('div');
@@ -104,7 +105,15 @@ function TasksCard() {
       const span = document.createElement('span');
       span.style.width = `${Math.round(progress * 100)}%`;
       bar.appendChild(span);
+
+      const skip = document.createElement('button');
+      skip.className = 'btn';
+      skip.textContent = 'Skip (Debug)';
+      skip.style.marginLeft = '8px';
+      skip.addEventListener('click', () => forceCompleteTask(t.id));
+
       right.appendChild(bar);
+      right.appendChild(skip);
       item.append(left, right);
       list.appendChild(item);
     }
