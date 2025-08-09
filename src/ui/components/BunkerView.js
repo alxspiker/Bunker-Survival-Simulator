@@ -4,6 +4,7 @@ import { WaterPanel } from './rooms/WaterPanel.js';
 import { PowerPanel } from './rooms/PowerPanel.js';
 import { DormitoryPanel } from './rooms/DormitoryPanel.js';
 import { OperationsPanel } from './rooms/OperationsPanel.js';
+import { TasksPanel } from './rooms/TasksPanel.js';
 
 export function renderGame(state) {
   const wrap = document.createElement('div');
@@ -17,6 +18,7 @@ export function renderGame(state) {
     WaterPanel(),
     PowerPanel(),
     DormitoryPanel(),
+    TasksPanel(),
     OperationsPanel()
   );
 
