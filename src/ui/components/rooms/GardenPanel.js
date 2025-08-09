@@ -87,7 +87,7 @@ function renderActions(state, actions) {
     if (!affordable || active || hasDisabledReason) {
       btn.setAttribute('disabled', 'true');
       if (hasDisabledReason) btn.textContent = a.disabledReason;
-      else if (!affordable && !active) btn.textContent = `Short by: ${formatCostMissing(state, a.cost)}`;
+      else if (!affordable && !active) btn.textContent = `Missing: ${formatCostMissing(state, a.cost)}`;
     }
 
     btn.addEventListener('click', () => !active && affordable && !hasDisabledReason && a.run());
