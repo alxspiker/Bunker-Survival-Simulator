@@ -23,6 +23,11 @@ export function createInitialState({ playerName, scenarioKey }) {
         dormitory: { status: 'locked', buildEndsAt: null },
       },
     },
+    capacities: {
+      food: 50,
+      water: 50,
+      power: 30,
+    },
     resources: {
       food: scenario.starting.food,
       water: scenario.starting.water,
@@ -67,7 +72,8 @@ export function getProductionPerHour(state) {
 
 export function clampResources(state) {
   const r = state.resources;
-  r.food = Math.max(0, r.food);
-  r.water = Math.max(0, r.water);
-  r.power = Math.max(0, r.power);
+  const c = state.capacities || { food: Infinity, water: Infinity, power: Infinity };
+  r.food = Math.min(Math.max(0, r.food), c.food);
+  r.water = Math.min(Math.max(0, r.water), c.water);
+  r.power = Math.min(Math.max(0, r.power), c.power);
 }

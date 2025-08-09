@@ -1,5 +1,6 @@
 import { loadState } from '../../storage.js';
 import { getProductionPerHour } from '../../state.js';
+import { formatDuration, timeToBoundary } from '../../utils/time.js';
 
 export function HUD(state) {
   const wrap = document.createElement('div');
@@ -15,27 +16,61 @@ export function HUD(state) {
   const resources = document.createElement('div');
   resources.className = 'hud';
 
+  const timers = document.createElement('div');
+  timers.className = 'list';
+
   const update = () => {
     const s = loadState();
     const r = s.resources;
+    const caps = s.capacities || { food: Infinity, water: Infinity, power: Infinity };
     const perHour = getProductionPerHour(s);
+
     resources.innerHTML = '';
     resources.append(
       makeTag('Food', `${r.food.toFixed(1)} (${fmtRate(perHour.food)}/h)`),
       makeTag('Water', `${r.water.toFixed(1)} (${fmtRate(perHour.water)}/h)`),
       makeTag('Power', `${r.power.toFixed(1)} (${fmtRate(perHour.power)}/h)`),
       makeTag('Seeds', r.seeds.toFixed?.(1) ?? r.seeds),
-      makeTag('Scrap', r.scrap),
+      makeTag('Scrap', s.resources.scrap),
       makeTag('Population', s.resources.population),
       makeTag('Morale', s.resources.morale)
+    );
+
+    timers.innerHTML = '';
+    timers.append(
+      timerLine('Food', r.food, perHour.food, 0, caps.food),
+      timerLine('Water', r.water, perHour.water, 0, caps.water),
+      timerLine('Power', r.power, perHour.power, 0, caps.power)
     );
   };
 
   update();
   wrap.appendChild(resources);
 
+  const timerCard = document.createElement('div');
+  timerCard.className = 'card';
+  const h2 = document.createElement('div');
+  h2.className = 'h2';
+  h2.textContent = 'Time Until Empty/Full';
+  timerCard.append(h2, timers);
+  
+  wrap.appendChild(timerCard);
+
   document.addEventListener('game:tick', update);
   return wrap;
+}
+
+function timerLine(label, current, rate, min, max) {
+  const item = document.createElement('div');
+  item.className = 'item';
+  const tMs = timeToBoundary(current, rate, min, max);
+  let txt = 'stable';
+  if (rate > 0 && current < max) txt = `full in ${formatDuration(tMs)}`;
+  else if (rate < 0 && current > min) txt = `empty in ${formatDuration(tMs)}`;
+  else if (rate > 0 && current >= max) txt = 'at capacity';
+  else if (rate < 0 && current <= min) txt = 'depleted';
+  item.innerHTML = `<div><strong>${label}</strong></div><div class="small">${txt}</div>`;
+  return item;
 }
 
 function fmtRate(x) {
