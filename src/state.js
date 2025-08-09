@@ -73,12 +73,13 @@ export function getProductionPerHour(state) {
 
   // Garden does not passively produce food; harvests yield food
   if (rooms.water.status === 'active') perHour.water += 0.5 + 0.5 * getRoomLevel(state, 'water');
-  if (rooms.power.status === 'active') perHour.power += 1 + 1 * getRoomLevel(state, 'power');
+  // Power generation: base 0.25 kWh/h + 0.25 kWh/h per level
+  if (rooms.power.status === 'active') perHour.power += 0.25 + 0.25 * getRoomLevel(state, 'power');
 
   // Consumption per hour
   perHour.food -= population * 0.125; // 3 food per day per person
   perHour.water -= population * (8 / 24); // 8 L per day per person
-  perHour.power -= 0.5; // baseline consumption
+  perHour.power -= (6 / 24) + population * (2 / 24); // 6 kWh/day baseline + 2 kWh/day per person
 
   return perHour;
 }
