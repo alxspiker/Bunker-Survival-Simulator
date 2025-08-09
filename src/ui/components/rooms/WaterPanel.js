@@ -26,7 +26,7 @@ export function WaterPanel() {
 
     const actionsWrap = document.createElement('div');
     actionsWrap.className = 'actions-list';
-    const actions = listAvailableActions(s).filter(a => a.key.includes('water'));
+    const actions = listAvailableActions(s).filter(a => a.key.includes('water') || a.key === 'purge_filters');
     actionsWrap.append(...renderActions(s, actions));
     body.appendChild(actionsWrap);
   }

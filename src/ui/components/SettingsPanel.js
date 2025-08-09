@@ -1,5 +1,3 @@
-import { saveState } from '../../storage.js';
-
 export function SettingsPanel({ onReset }) {
   const card = document.createElement('section');
   card.className = 'card section';
