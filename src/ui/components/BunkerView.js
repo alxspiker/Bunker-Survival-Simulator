@@ -4,6 +4,7 @@ import { LogView } from './Log.js';
 import { loadState } from '../../storage.js';
 import { formatDuration, nowMs } from '../../utils/time.js';
 import { forceCompleteTask } from '../../game/gameEngine.js';
+import { getRoomLevel, getPopulationCap } from '../../state.js';
 
 export function renderGame(state) {
   const wrap = document.createElement('div');
@@ -51,10 +52,18 @@ function RoomsCard() {
       const cell = document.createElement('div');
       cell.className = 'item';
       const extra = key === 'garden' && hasCrop ? ' · crop growing' : '';
-      const status = formatRoomStatus(room) + extra;
+      const lvl = room.level ? ` · lvl ${room.level}` : '';
+      const status = formatRoomStatus(room) + extra + lvl;
       cell.innerHTML = `<div><strong>${capitalize(key)}</strong><div class="small">${status}</div></div>`;
       grid.appendChild(cell);
     }
+
+    // Population cap display
+    const cap = getPopulationCap(s);
+    const info = document.createElement('div');
+    info.className = 'small';
+    info.textContent = `Population capacity: ${s.resources.population}/${cap}`;
+    grid.appendChild(info);
   }
 
   render();
@@ -100,7 +109,8 @@ function TasksCard() {
       item.className = 'item';
       const left = document.createElement('div');
       const scopeTag = t.scope === 'background' ? '<span class="small">Background</span>' : '<span class="small">Foreground</span>';
-      left.innerHTML = `<div><strong>${t.description}</strong> ${scopeTag}</div><div class="small">${formatDuration(remain)}</div>`;
+      const roomTag = t.room ? ` · <span class="small">${t.room}</span>` : '';
+      left.innerHTML = `<div><strong>${t.description}</strong> ${scopeTag}${roomTag}</div><div class="small">${formatDuration(remain)}</div>`;
       const right = document.createElement('div');
       const progress = Math.min(1, (t.durationMs - remain) / t.durationMs);
       const bar = document.createElement('div');

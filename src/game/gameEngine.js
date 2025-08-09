@@ -1,6 +1,6 @@
 import { loadState, saveState } from '../storage.js';
 import { nowMs } from '../utils/time.js';
-import { addLog, clampResources, getProductionPerHour } from '../state.js';
+import { addLog, clampResources, getProductionPerHour, getRoomLevel } from '../state.js';
 
 let intervalId = null;
 
@@ -31,7 +31,7 @@ function processTick(isInitial) {
   state.resources.water += perHour.water * hoursElapsed;
   state.resources.power += perHour.power * hoursElapsed;
 
-  // Process tasks (construction, planting, crop growth)
+  // Process tasks (construction, planting, crop growth, upgrades, maintenance, recruit, scout)
   const completed = [];
   for (const task of state.tasks) {
     if (task.endsAt <= now) completed.push(task);
@@ -67,6 +67,7 @@ function applyTaskCompletion(state, task) {
     const room = state.bunker.rooms[task.room];
     if (room) {
       room.status = 'active';
+      room.level = 1;
       room.buildEndsAt = null;
       addLog(state, `${capitalize(task.room)} is now operational.`);
     }
@@ -83,16 +84,56 @@ function applyTaskCompletion(state, task) {
       startedAt: now,
       endsAt: now + growthDuration,
       durationMs: growthDuration,
-      yield: { food: 5 },
+      yield: { base: 5 },
       description: 'Crops growing (background)',
     });
     addLog(state, 'Planting finished. Crops are now growing (1 day).');
   }
 
   if (task.type === 'crop-growth') {
-    const yieldFood = task.yield?.food ?? 0;
+    const level = getRoomLevel(state, 'garden');
+    const base = task.yield?.base ?? 5;
+    const yieldFood = Math.round(base * (1 + 0.5 * Math.max(0, level - 1)));
     state.resources.food += yieldFood;
     addLog(state, `Harvest complete. +${yieldFood} food.`);
+  }
+
+  if (task.type === 'upgrade-room') {
+    const room = state.bunker.rooms[task.room];
+    if (room && room.status === 'active') {
+      room.level = (room.level || 1) + 1;
+      addLog(state, `${capitalize(task.room)} upgraded to level ${room.level}.`);
+    }
+  }
+
+  if (task.type === 'maintenance') {
+    const reward = task.reward || {};
+    for (const [k, v] of Object.entries(reward)) {
+      state.resources[k] = (state.resources[k] ?? 0) + v;
+    }
+    addLog(state, 'Maintenance complete. Systems are running smoother.');
+  }
+
+  if (task.type === 'recruit') {
+    state.resources.population += 1;
+    state.resources.morale += 2;
+    addLog(state, 'A survivor joined the bunker. +1 population, +2 morale.');
+  }
+
+  if (task.type === 'scout') {
+    // Very simple loot table
+    const roll = Math.random();
+    if (roll < 0.6) {
+      const scrap = 2 + Math.floor(Math.random() * 3);
+      state.resources.scrap += scrap;
+      addLog(state, `Scouting found scrap: +${scrap}.`);
+    } else if (roll < 0.85) {
+      state.resources.seeds += 1;
+      addLog(state, 'Scouting found seeds: +1.');
+    } else {
+      state.resources.morale -= 2;
+      addLog(state, 'Scouting encountered danger. Morale -2.');
+    }
   }
 }
 

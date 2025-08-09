@@ -17,10 +17,10 @@ export function createInitialState({ playerName, scenarioKey }) {
     bunker: {
       rooms: {
         entrance: { level: 1, builtAt: createdAt },
-        garden: { status: 'locked', buildEndsAt: null },
-        water: { status: 'locked', buildEndsAt: null },
-        power: { status: 'locked', buildEndsAt: null },
-        dormitory: { status: 'locked', buildEndsAt: null },
+        garden: { status: 'locked', buildEndsAt: null, level: 0 },
+        water: { status: 'locked', buildEndsAt: null, level: 0 },
+        power: { status: 'locked', buildEndsAt: null, level: 0 },
+        dormitory: { status: 'locked', buildEndsAt: null, level: 0 },
       },
     },
     capacities: {
@@ -51,6 +51,18 @@ export function addLog(state, text, ts) {
   state.log = state.log.slice(0, 200);
 }
 
+export function getRoomLevel(state, roomKey) {
+  const r = state.bunker.rooms[roomKey];
+  if (!r) return 0;
+  if (r.status === 'active' && !r.level) r.level = 1;
+  return r.level || 0;
+}
+
+export function getPopulationCap(state) {
+  const dormLevel = getRoomLevel(state, 'dormitory');
+  return 3 + dormLevel * 2;
+}
+
 export function getProductionPerHour(state) {
   // Returns net production per hour for each resource based on active rooms and population
   const perHour = { food: 0, water: 0, power: 0 };
@@ -58,9 +70,9 @@ export function getProductionPerHour(state) {
   const { rooms } = state.bunker;
   const population = state.resources.population;
 
-  // Garden no longer passively produces food; growth cycles yield food on completion
-  if (rooms.water.status === 'active') perHour.water += 1;
-  if (rooms.power.status === 'active') perHour.power += 2;
+  // Garden does not passively produce food; harvests yield food
+  if (rooms.water.status === 'active') perHour.water += 0.5 + 0.5 * getRoomLevel(state, 'water');
+  if (rooms.power.status === 'active') perHour.power += 1 + 1 * getRoomLevel(state, 'power');
 
   // Consumption per hour
   perHour.food -= population * 0.3; // each person consumes

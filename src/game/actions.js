@@ -1,6 +1,6 @@
 import { loadState, saveState } from '../storage.js';
 import { nowMs } from '../utils/time.js';
-import { addLog } from '../state.js';
+import { addLog, getRoomLevel, getPopulationCap } from '../state.js';
 
 export function listAvailableActions(state) {
   const actions = [];
@@ -50,8 +50,8 @@ export function listAvailableActions(state) {
     });
   }
 
-  // Planting seeds is available once the garden is operational and no crop is currently growing
-  if (rooms.garden.status === 'active' && !hasActiveBackgroundCrop(state)) {
+  // Upgrades when rooms are active
+  if (rooms.garden.status === 'active') {
     actions.push({
       key: 'plant_seeds',
       label: 'Plant Seeds (5m)',
@@ -61,6 +61,90 @@ export function listAvailableActions(state) {
       run: () => schedulePlanting(5 * 60_000, { seeds: 1, water: 1 }),
     });
   }
+  if (rooms.garden.status === 'active') {
+    const level = getRoomLevel(state, 'garden');
+    actions.push({
+      key: 'upgrade_garden',
+      label: `Upgrade Garden (lvl ${level + 1}) (2h)`,
+      description: 'Increase yield on harvests.',
+      durationMs: 2 * 3600_000,
+      cost: { scrap: 3, seeds: 1 },
+      run: () => scheduleUpgrade('garden', 2 * 3600_000, { scrap: 3, seeds: 1 }),
+    });
+  }
+
+  if (rooms.water.status === 'active') {
+    const level = getRoomLevel(state, 'water');
+    actions.push({
+      key: 'upgrade_water',
+      label: `Upgrade Water Recycler (lvl ${level + 1}) (2h)`,
+      description: 'Improve water recovery efficiency.',
+      durationMs: 2 * 3600_000,
+      cost: { scrap: 3 },
+      run: () => scheduleUpgrade('water', 2 * 3600_000, { scrap: 3 }),
+    });
+    actions.push({
+      key: 'purge_filters',
+      label: 'Purge Filters (30m)',
+      description: 'Maintenance task that prevents breakdowns and gives a small water burst.',
+      durationMs: 30 * 60_000,
+      cost: { power: 0.5 },
+      run: () => scheduleMaintenance('water', 30 * 60_000, { power: 0.5 }, { water: 2 }),
+    });
+  }
+
+  if (rooms.power.status === 'active') {
+    const level = getRoomLevel(state, 'power');
+    actions.push({
+      key: 'upgrade_power',
+      label: `Upgrade Generator (lvl ${level + 1}) (2h)`,
+      description: 'Improve power output and efficiency.',
+      durationMs: 2 * 3600_000,
+      cost: { scrap: 4 },
+      run: () => scheduleUpgrade('power', 2 * 3600_000, { scrap: 4 }),
+    });
+    actions.push({
+      key: 'maintain_generator',
+      label: 'Generator Maintenance (20m)',
+      description: 'Perform maintenance to avoid power spikes; small power burst.',
+      durationMs: 20 * 60_000,
+      cost: { scrap: 1 },
+      run: () => scheduleMaintenance('power', 20 * 60_000, { scrap: 1 }, { power: 2 }),
+    });
+  }
+
+  if (rooms.dormitory.status === 'active') {
+    const level = getRoomLevel(state, 'dormitory');
+    actions.push({
+      key: 'upgrade_dorm',
+      label: `Upgrade Dormitory (lvl ${level + 1}) (2h)`,
+      description: 'Increase population capacity and morale.',
+      durationMs: 2 * 3600_000,
+      cost: { scrap: 3 },
+      run: () => scheduleUpgrade('dormitory', 2 * 3600_000, { scrap: 3 }),
+    });
+    // Recruit if capacity allows
+    if (state.resources.population < getPopulationCap(state)) {
+      actions.push({
+        key: 'recruit_survivor',
+        label: 'Recruit Survivor (1h)',
+        description: 'Risk a short foray to find a survivor to join your bunker.',
+        durationMs: 1 * 3600_000,
+        cost: { food: 1, water: 1 },
+        run: () => scheduleRecruit(1 * 3600_000, { food: 1, water: 1 }),
+      });
+    }
+  }
+
+  // Scouting (generic)
+  actions.push({
+    key: 'scout_area',
+    label: 'Scout Area (3h)',
+    description: 'Gather intel and maybe find scrap (risk: small).',
+    durationMs: 3 * 3600_000,
+    cost: { food: 1, water: 1 },
+    run: () => scheduleScouting(3 * 3600_000, { food: 1, water: 1 }),
+  });
 
   return actions;
 }
@@ -158,6 +242,133 @@ function schedulePlanting(durationMs, cost) {
 
   state.tasks.push(task);
   addLog(state, `Started planting. Will finish in ${Math.round(durationMs / 60000)}m.`);
+  saveState(state);
+  document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+}
+
+function scheduleUpgrade(roomKey, durationMs, cost) {
+  const state = loadState();
+  if (!state) return;
+
+  if (hasActiveTask(state)) {
+    addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (!canAfford(state, cost)) return;
+  const now = nowMs();
+  payCost(state, cost);
+
+  const task = {
+    id: `task_${Math.random().toString(36).slice(2)}`,
+    type: 'upgrade-room',
+    scope: 'foreground',
+    room: roomKey,
+    startedAt: now,
+    endsAt: now + durationMs,
+    durationMs,
+    description: `Upgrading ${roomKey}`,
+  };
+
+  state.tasks.push(task);
+  addLog(state, `Started upgrading ${roomKey}. ETA ${Math.round(durationMs / 60000)}m.`);
+  saveState(state);
+  document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+}
+
+function scheduleMaintenance(roomKey, durationMs, cost, reward) {
+  const state = loadState();
+  if (!state) return;
+
+  if (hasActiveTask(state)) {
+    addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (!canAfford(state, cost)) return;
+  const now = nowMs();
+  payCost(state, cost);
+
+  const task = {
+    id: `task_${Math.random().toString(36).slice(2)}`,
+    type: 'maintenance',
+    scope: 'foreground',
+    room: roomKey,
+    startedAt: now,
+    endsAt: now + durationMs,
+    durationMs,
+    reward: reward || {},
+    description: `Maintaining ${roomKey}`,
+  };
+
+  state.tasks.push(task);
+  addLog(state, `Started maintenance on ${roomKey}.`);
+  saveState(state);
+  document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+}
+
+function scheduleRecruit(durationMs, cost) {
+  const state = loadState();
+  if (!state) return;
+
+  if (hasActiveTask(state)) {
+    addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (!canAfford(state, cost)) return;
+  const now = nowMs();
+  payCost(state, cost);
+
+  const task = {
+    id: `task_${Math.random().toString(36).slice(2)}`,
+    type: 'recruit',
+    scope: 'foreground',
+    startedAt: now,
+    endsAt: now + durationMs,
+    durationMs,
+    description: 'Recruiting a survivor',
+  };
+
+  state.tasks.push(task);
+  addLog(state, 'Left to recruit a survivor.');
+  saveState(state);
+  document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+}
+
+function scheduleScouting(durationMs, cost) {
+  const state = loadState();
+  if (!state) return;
+
+  if (hasActiveTask(state)) {
+    addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (!canAfford(state, cost)) return;
+  const now = nowMs();
+  payCost(state, cost);
+
+  const task = {
+    id: `task_${Math.random().toString(36).slice(2)}`,
+    type: 'scout',
+    scope: 'foreground',
+    startedAt: now,
+    endsAt: now + durationMs,
+    durationMs,
+    description: 'Scouting the area',
+  };
+
+  state.tasks.push(task);
+  addLog(state, 'Scouting party dispatched.');
   saveState(state);
   document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
 }
