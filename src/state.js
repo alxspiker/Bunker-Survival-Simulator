@@ -77,7 +77,7 @@ export function getProductionPerHour(state) {
 
   // Consumption per hour
   perHour.food -= population * 0.125; // 3 food per day per person
-  perHour.water -= population * 0.4;
+  perHour.water -= population * (8 / 24); // 8 L per day per person
   perHour.power -= 0.5; // baseline consumption
 
   return perHour;
