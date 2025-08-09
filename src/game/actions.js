@@ -50,8 +50,8 @@ export function listAvailableActions(state) {
     });
   }
 
-  // Planting seeds is available once the garden is operational
-  if (rooms.garden.status === 'active') {
+  // Planting seeds is available once the garden is operational and no crop is currently growing
+  if (rooms.garden.status === 'active' && !hasActiveBackgroundCrop(state)) {
     actions.push({
       key: 'plant_seeds',
       label: 'Plant Seeds (5m)',
@@ -67,6 +67,10 @@ export function listAvailableActions(state) {
 
 export function hasActiveTask(state) {
   return (state.tasks || []).some(t => (t.scope || 'foreground') === 'foreground');
+}
+
+export function hasActiveBackgroundCrop(state) {
+  return (state.tasks || []).some(t => t.type === 'crop-growth' && (t.scope || 'background') === 'background');
 }
 
 export function canAfford(state, cost) {
@@ -126,6 +130,13 @@ function schedulePlanting(durationMs, cost) {
 
   if (hasActiveTask(state)) {
     addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (hasActiveBackgroundCrop(state)) {
+    addLog(state, 'The garden is already growing. Wait for the harvest before planting again.');
     saveState(state);
     document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
     return;

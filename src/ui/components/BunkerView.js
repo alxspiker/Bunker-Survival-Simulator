@@ -46,10 +46,12 @@ function RoomsCard() {
   function render() {
     const s = loadState();
     grid.innerHTML = '';
+    const hasCrop = (s.tasks || []).some(t => t.type === 'crop-growth' && (t.scope || 'background') === 'background');
     for (const [key, room] of Object.entries(s.bunker.rooms)) {
       const cell = document.createElement('div');
       cell.className = 'item';
-      const status = formatRoomStatus(room);
+      const extra = key === 'garden' && hasCrop ? ' · crop growing' : '';
+      const status = formatRoomStatus(room) + extra;
       cell.innerHTML = `<div><strong>${capitalize(key)}</strong><div class="small">${status}</div></div>`;
       grid.appendChild(cell);
     }
