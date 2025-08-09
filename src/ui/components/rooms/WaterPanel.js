@@ -1,6 +1,7 @@
 import { loadState } from '../../../storage.js';
 import { listAvailableActions, canAfford, hasActiveTask } from '../../../game/actions.js';
 import { formatDuration } from '../../../utils/time.js';
+import { formatCost, formatCostMissing } from '../../format.js';
 
 export function WaterPanel() {
   const card = document.createElement('section');
@@ -79,17 +80,4 @@ function renderActions(state, actions) {
     row.append(left, right);
     return row;
   });
-}
-
-function formatCost(cost) {
-  return Object.entries(cost).map(([k, v]) => `${v} ${k}`).join(', ');
-}
-
-function formatCostMissing(state, cost) {
-  const miss = [];
-  for (const [k, v] of Object.entries(cost || {})) {
-    const have = state.resources[k] ?? 0;
-    if (have < v) miss.push(`${(v - have).toFixed(1)} ${k}`);
-  }
-  return miss.join(', ');
 }
