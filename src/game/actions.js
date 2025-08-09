@@ -50,8 +50,8 @@ export function listAvailableActions(state) {
     });
   }
 
-  // Upgrades when rooms are active
-  if (rooms.garden.status === 'active') {
+  // Garden actions when operational
+  if (rooms.garden.status === 'active' && !hasActiveBackgroundCrop(state)) {
     actions.push({
       key: 'plant_seeds',
       label: 'Plant Seeds (5m)',
@@ -123,7 +123,6 @@ export function listAvailableActions(state) {
       cost: { scrap: 3 },
       run: () => scheduleUpgrade('dormitory', 2 * 3600_000, { scrap: 3 }),
     });
-    // Recruit if capacity allows
     if (state.resources.population < getPopulationCap(state)) {
       actions.push({
         key: 'recruit_survivor',
@@ -136,7 +135,6 @@ export function listAvailableActions(state) {
     }
   }
 
-  // Scouting (generic)
   actions.push({
     key: 'scout_area',
     label: 'Scout Area (3h)',
@@ -214,6 +212,13 @@ function schedulePlanting(durationMs, cost) {
 
   if (hasActiveTask(state)) {
     addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (state.bunker.rooms.garden.status !== 'active') {
+    addLog(state, 'The garden is not operational.');
     saveState(state);
     document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
     return;
