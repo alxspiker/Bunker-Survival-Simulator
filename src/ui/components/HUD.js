@@ -27,6 +27,7 @@ export function HUD() {
         value: r.food,
         rate: perHour.food,
         cap: caps.food,
+        unit: 'r',
       }),
       statTile({
         icon: '💧',
@@ -34,6 +35,7 @@ export function HUD() {
         value: r.water,
         rate: perHour.water,
         cap: caps.water,
+        unit: 'L',
       }),
       statTile({
         icon: '⚡',
@@ -41,6 +43,7 @@ export function HUD() {
         value: r.power,
         rate: perHour.power,
         cap: caps.power,
+        unit: 'kWh',
       })
     );
 
@@ -61,7 +64,7 @@ export function HUD() {
   return card;
 }
 
-function statTile({ icon, label, value, rate, cap }) {
+function statTile({ icon, label, value, rate, cap, unit }) {
   const wrap = document.createElement('div');
   wrap.className = 'stat';
 
@@ -71,12 +74,12 @@ function statTile({ icon, label, value, rate, cap }) {
 
   const val = document.createElement('div');
   val.className = 'stat-value';
-  val.textContent = `${value.toFixed(1)}`;
+  val.textContent = `${value.toFixed(1)}${unit ? ' ' + unit : ''}`;
 
   const meta = document.createElement('div');
   meta.className = 'stat-meta';
   const sign = rate > 0 ? '+' : '';
-  meta.textContent = `${sign}${rate.toFixed(2)}/h`;
+  meta.textContent = `${sign}${rate.toFixed(2)}${unit ? ' ' + unit : ''}/h`;
 
   const bar = document.createElement('div');
   bar.className = 'capacity-bar';
