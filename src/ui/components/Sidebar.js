@@ -1,16 +1,16 @@
 const PANEL_KEY = 'bunker.ui.panel.v1';
 
 const PANELS = [
+  { key: 'tasks', label: 'Tasks', icon: '📋' },
   { key: 'garden', label: 'Garden', icon: '🌾' },
   { key: 'water', label: 'Water', icon: '💧' },
   { key: 'power', label: 'Power', icon: '⚡' },
   { key: 'dormitory', label: 'Dormitory', icon: '🛏️' },
-  { key: 'tasks', label: 'Tasks', icon: '📋' },
   { key: 'operations', label: 'Operations', icon: '🧭' },
 ];
 
 export function getSavedPanel() {
-  try { return localStorage.getItem(PANEL_KEY) || 'garden'; } catch { return 'garden'; }
+  try { return localStorage.getItem(PANEL_KEY) || 'tasks'; } catch { return 'tasks'; }
 }
 export function savePanel(key) {
   try { localStorage.setItem(PANEL_KEY, key); } catch {}

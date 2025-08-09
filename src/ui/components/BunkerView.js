@@ -21,6 +21,7 @@ export function renderGame() {
   content.className = 'content';
 
   let current = getSavedPanel();
+  let sidebarEl = Sidebar({ current, onSelect: mountPanel });
 
   function mountPanel(key) {
     current = key;
@@ -33,12 +34,13 @@ export function renderGame() {
       key === 'tasks' ? TasksPanel() :
       OperationsPanel();
     content.appendChild(panel);
-    // Re-render sidebar to reflect active state
-    sidebar.replaceWith(Sidebar({ current, onSelect: mountPanel }));
+    // Re-render sidebar to reflect active state and update reference
+    const newSidebar = Sidebar({ current, onSelect: mountPanel });
+    layout.replaceChild(newSidebar, sidebarEl);
+    sidebarEl = newSidebar;
   }
 
-  const sidebar = Sidebar({ current, onSelect: mountPanel });
-  layout.appendChild(sidebar);
+  layout.appendChild(sidebarEl);
   layout.appendChild(content);
 
   wrap.appendChild(layout);
