@@ -43,11 +43,17 @@ export function ActionsPanel() {
       btn.textContent = active ? 'Busy' : 'Start';
 
       const affordable = canAfford(state, a.cost);
-      if (!affordable || active) btn.setAttribute('disabled', 'true');
+      if (!affordable || active) {
+        btn.setAttribute('disabled', 'true');
+        if (!affordable && !active) {
+          btn.textContent = `Need: ${formatCostMissing(state, a.cost)}`;
+        }
+      }
 
-      btn.addEventListener('click', () => !active && a.run());
+      btn.addEventListener('click', () => !active && affordable && a.run());
 
-      left.innerHTML = `<div><strong>${a.label}</strong></div><div class="small">${a.description}${a.durationMs ? ` · ${formatDuration(a.durationMs)}` : ''}</div>`;
+      const costText = a.cost ? ` · Cost: ${formatCost(a.cost)}` : '';
+      left.innerHTML = `<div><strong>${a.label}</strong></div><div class="small">${a.description}${a.durationMs ? ` · ${formatDuration(a.durationMs)}` : ''}${costText}</div>`;
       right.appendChild(btn);
 
       item.append(left, right);
@@ -60,4 +66,17 @@ export function ActionsPanel() {
 
   wrap.append(title, notice, list);
   return wrap;
+}
+
+function formatCost(cost) {
+  return Object.entries(cost).map(([k, v]) => `${v} ${k}`).join(', ');
+}
+
+function formatCostMissing(state, cost) {
+  const miss = [];
+  for (const [k, v] of Object.entries(cost || {})) {
+    const have = state.resources[k] ?? 0;
+    if (have < v) miss.push(`${(v - have).toFixed(1)} ${k}`);
+  }
+  return miss.join(', ');
 }

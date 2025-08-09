@@ -16,7 +16,7 @@ export function createInitialState({ playerName, scenarioKey }) {
     scenario: scenario.key,
     bunker: {
       rooms: {
-        entrance: { level: 1, builtAt: createdAt },
+        entrance: { status: 'active', level: 1, builtAt: createdAt },
         garden: { status: 'locked', buildEndsAt: null, level: 0 },
         water: { status: 'locked', buildEndsAt: null, level: 0 },
         power: { status: 'locked', buildEndsAt: null, level: 0 },
