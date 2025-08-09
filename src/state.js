@@ -76,7 +76,7 @@ export function getProductionPerHour(state) {
   if (rooms.power.status === 'active') perHour.power += 1 + 1 * getRoomLevel(state, 'power');
 
   // Consumption per hour
-  perHour.food -= population * 0.3; // each person consumes
+  perHour.food -= population * 0.125; // 3 food per day per person
   perHour.water -= population * 0.4;
   perHour.power -= 0.5; // baseline consumption
 
