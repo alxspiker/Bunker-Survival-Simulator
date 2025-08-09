@@ -1,0 +1,57 @@
+import { listAvailableActions, canAfford } from '../../game/actions.js';
+import { loadState } from '../../storage.js';
+import { formatDuration } from '../../utils/time.js';
+
+export function ActionsPanel() {
+  const wrap = document.createElement('div');
+  wrap.className = 'card';
+
+  const title = document.createElement('div');
+  title.className = 'h2';
+  title.textContent = 'Actions';
+
+  const list = document.createElement('div');
+  list.className = 'list';
+
+  function render() {
+    const state = loadState();
+    const actions = listAvailableActions(state);
+    list.innerHTML = '';
+
+    if (actions.length === 0) {
+      const empty = document.createElement('div');
+      empty.className = 'small';
+      empty.textContent = 'No actions available right now. Let time pass or prepare for expeditions (coming soon).';
+      list.appendChild(empty);
+      return;
+    }
+
+    for (const a of actions) {
+      const item = document.createElement('div');
+      item.className = 'item';
+      const left = document.createElement('div');
+      const right = document.createElement('div');
+
+      const btn = document.createElement('button');
+      btn.className = 'btn secondary';
+      btn.textContent = 'Start';
+
+      const affordable = canAfford(state, a.cost);
+      if (!affordable) btn.setAttribute('disabled', 'true');
+
+      btn.addEventListener('click', () => a.run());
+
+      left.innerHTML = `<div><strong>${a.label}</strong></div><div class="small">${a.description}${a.durationMs ? ` · ${formatDuration(a.durationMs)}` : ''}</div>`;
+      right.appendChild(btn);
+
+      item.append(left, right);
+      list.appendChild(item);
+    }
+  }
+
+  render();
+  document.addEventListener('game:tick', render);
+
+  wrap.append(title, list);
+  return wrap;
+}
