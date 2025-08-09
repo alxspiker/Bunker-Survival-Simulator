@@ -19,6 +19,10 @@ export function HUD(state) {
   const timers = document.createElement('div');
   timers.className = 'list';
 
+  const timersTitle = document.createElement('div');
+  timersTitle.className = 'h2';
+  timersTitle.textContent = 'Time Until Empty/Full';
+
   const update = () => {
     const s = loadState();
     const r = s.resources;
@@ -46,15 +50,9 @@ export function HUD(state) {
 
   update();
   wrap.appendChild(resources);
-
-  const timerCard = document.createElement('div');
-  timerCard.className = 'card';
-  const h2 = document.createElement('div');
-  h2.className = 'h2';
-  h2.textContent = 'Time Until Empty/Full';
-  timerCard.append(h2, timers);
-  
-  wrap.appendChild(timerCard);
+  wrap.appendChild(document.createElement('hr')).className = 'sep';
+  wrap.appendChild(timersTitle);
+  wrap.appendChild(timers);
 
   document.addEventListener('game:tick', update);
   return wrap;
