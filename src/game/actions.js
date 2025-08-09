@@ -53,6 +53,10 @@ export function listAvailableActions(state) {
   return actions;
 }
 
+export function hasActiveTask(state) {
+  return (state.tasks?.length || 0) > 0;
+}
+
 export function canAfford(state, cost) {
   if (!cost) return true;
   for (const [k, v] of Object.entries(cost)) {
@@ -71,6 +75,14 @@ export function payCost(state, cost) {
 function scheduleBuild(roomKey, durationMs, cost) {
   const state = loadState();
   if (!state) return;
+
+  if (hasActiveTask(state)) {
+    addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
   if (!canAfford(state, cost)) return;
 
   const now = nowMs();

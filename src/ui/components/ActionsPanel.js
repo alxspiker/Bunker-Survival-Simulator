@@ -1,4 +1,4 @@
-import { listAvailableActions, canAfford } from '../../game/actions.js';
+import { listAvailableActions, canAfford, hasActiveTask } from '../../game/actions.js';
 import { loadState } from '../../storage.js';
 import { formatDuration } from '../../utils/time.js';
 
@@ -13,10 +13,16 @@ export function ActionsPanel() {
   const list = document.createElement('div');
   list.className = 'list';
 
+  const notice = document.createElement('div');
+  notice.className = 'small warn';
+
   function render() {
     const state = loadState();
     const actions = listAvailableActions(state);
+    const active = hasActiveTask(state);
     list.innerHTML = '';
+
+    notice.textContent = active ? 'A task is already in progress. Only one task may run at a time.' : '';
 
     if (actions.length === 0) {
       const empty = document.createElement('div');
@@ -34,12 +40,12 @@ export function ActionsPanel() {
 
       const btn = document.createElement('button');
       btn.className = 'btn secondary';
-      btn.textContent = 'Start';
+      btn.textContent = active ? 'Busy' : 'Start';
 
       const affordable = canAfford(state, a.cost);
-      if (!affordable) btn.setAttribute('disabled', 'true');
+      if (!affordable || active) btn.setAttribute('disabled', 'true');
 
-      btn.addEventListener('click', () => a.run());
+      btn.addEventListener('click', () => !active && a.run());
 
       left.innerHTML = `<div><strong>${a.label}</strong></div><div class="small">${a.description}${a.durationMs ? ` · ${formatDuration(a.durationMs)}` : ''}</div>`;
       right.appendChild(btn);
@@ -52,6 +58,6 @@ export function ActionsPanel() {
   render();
   document.addEventListener('game:tick', render);
 
-  wrap.append(title, list);
+  wrap.append(title, notice, list);
   return wrap;
 }
