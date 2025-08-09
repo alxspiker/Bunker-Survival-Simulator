@@ -82,12 +82,14 @@ function renderActions(state, actions) {
     btn.textContent = active ? 'Busy' : 'Start';
 
     const affordable = canAfford(state, a.cost);
-    if (!affordable || active) {
+    const hasDisabledReason = !!a.disabledReason;
+    if (!affordable || active || hasDisabledReason) {
       btn.setAttribute('disabled', 'true');
-      if (!affordable && !active) btn.textContent = `Need: ${formatCostMissing(state, a.cost)}`;
+      if (hasDisabledReason) btn.textContent = a.disabledReason;
+      else if (!affordable && !active) btn.textContent = `Need: ${formatCostMissing(state, a.cost)}`;
     }
 
-    btn.addEventListener('click', () => !active && affordable && a.run());
+    btn.addEventListener('click', () => !active && affordable && !hasDisabledReason && a.run());
 
     const costText = a.cost ? ` · Cost: ${formatCost(a.cost)}` : '';
     left.innerHTML = `<div><strong>${a.label}</strong></div><div class="small">${a.description}${a.durationMs ? ` · ${formatDuration(a.durationMs)}` : ''}${costText}</div>`;

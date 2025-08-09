@@ -77,6 +77,7 @@ function applyTaskCompletion(state, task) {
       id: `task_${Math.random().toString(36).slice(2)}`,
       type: 'crop-growth',
       scope: 'background',
+      room: 'garden',
       startedAt: now,
       endsAt: now + growthDuration,
       durationMs: growthDuration,

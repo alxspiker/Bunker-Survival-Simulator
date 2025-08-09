@@ -69,6 +69,7 @@ export function listAvailableActions(state) {
       description: 'Increase yield on harvests.',
       durationMs: 2 * 3600_000,
       cost: { scrap: 3, seeds: 1 },
+      disabledReason: hasRoomBackgroundTask(state, 'garden') ? 'Growing in progress' : null,
       run: () => scheduleUpgrade('garden', 2 * 3600_000, { scrap: 3, seeds: 1 }),
     });
   }
@@ -81,6 +82,7 @@ export function listAvailableActions(state) {
       description: 'Improve water recovery efficiency.',
       durationMs: 2 * 3600_000,
       cost: { scrap: 3 },
+      disabledReason: hasRoomBackgroundTask(state, 'water') ? 'Background process active' : null,
       run: () => scheduleUpgrade('water', 2 * 3600_000, { scrap: 3 }),
     });
     actions.push({
@@ -89,6 +91,7 @@ export function listAvailableActions(state) {
       description: 'Maintenance task that prevents breakdowns and gives a small water burst.',
       durationMs: 30 * 60_000,
       cost: { power: 0.5 },
+      disabledReason: hasRoomBackgroundTask(state, 'water') ? 'Background process active' : null,
       run: () => scheduleMaintenance('water', 30 * 60_000, { power: 0.5 }, { water: 2 }),
     });
   }
@@ -101,6 +104,7 @@ export function listAvailableActions(state) {
       description: 'Improve power output and efficiency.',
       durationMs: 2 * 3600_000,
       cost: { scrap: 4 },
+      disabledReason: hasRoomBackgroundTask(state, 'power') ? 'Background process active' : null,
       run: () => scheduleUpgrade('power', 2 * 3600_000, { scrap: 4 }),
     });
     actions.push({
@@ -109,6 +113,7 @@ export function listAvailableActions(state) {
       description: 'Perform maintenance to avoid power spikes; small power burst.',
       durationMs: 20 * 60_000,
       cost: { scrap: 1 },
+      disabledReason: hasRoomBackgroundTask(state, 'power') ? 'Background process active' : null,
       run: () => scheduleMaintenance('power', 20 * 60_000, { scrap: 1 }, { power: 2 }),
     });
   }
@@ -121,6 +126,7 @@ export function listAvailableActions(state) {
       description: 'Increase population capacity and morale.',
       durationMs: 2 * 3600_000,
       cost: { scrap: 3 },
+      disabledReason: hasRoomBackgroundTask(state, 'dormitory') ? 'Background process active' : null,
       run: () => scheduleUpgrade('dormitory', 2 * 3600_000, { scrap: 3 }),
     });
     if (state.resources.population < getPopulationCap(state)) {
@@ -130,6 +136,7 @@ export function listAvailableActions(state) {
         description: 'Risk a short foray to find a survivor to join your bunker.',
         durationMs: 1 * 3600_000,
         cost: { food: 1, water: 1 },
+        disabledReason: hasRoomBackgroundTask(state, 'dormitory') ? 'Background process active' : null,
         run: () => scheduleRecruit(1 * 3600_000, { food: 1, water: 1 }),
       });
     }
@@ -141,6 +148,7 @@ export function listAvailableActions(state) {
     description: 'Gather intel and maybe find scrap (risk: small).',
     durationMs: 3 * 3600_000,
     cost: { food: 1, water: 1 },
+    disabledReason: null,
     run: () => scheduleScouting(3 * 3600_000, { food: 1, water: 1 }),
   });
 
@@ -153,6 +161,10 @@ export function hasActiveTask(state) {
 
 export function hasActiveBackgroundCrop(state) {
   return (state.tasks || []).some(t => t.type === 'crop-growth' && (t.scope || 'background') === 'background');
+}
+
+export function hasRoomBackgroundTask(state, roomKey) {
+  return (state.tasks || []).some(t => (t.scope || 'background') === 'background' && t.room === roomKey);
 }
 
 export function canAfford(state, cost) {
@@ -239,6 +251,7 @@ function schedulePlanting(durationMs, cost) {
     id: `task_${Math.random().toString(36).slice(2)}`,
     type: 'planting',
     scope: 'foreground',
+    room: 'garden',
     startedAt: now,
     endsAt: now + durationMs,
     durationMs,
@@ -257,6 +270,13 @@ function scheduleUpgrade(roomKey, durationMs, cost) {
 
   if (hasActiveTask(state)) {
     addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (hasRoomBackgroundTask(state, roomKey)) {
+    addLog(state, `Cannot upgrade ${roomKey} while a background task is active.`);
     saveState(state);
     document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
     return;
@@ -289,6 +309,13 @@ function scheduleMaintenance(roomKey, durationMs, cost, reward) {
 
   if (hasActiveTask(state)) {
     addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (hasRoomBackgroundTask(state, roomKey)) {
+    addLog(state, `Cannot run maintenance on ${roomKey} while a background task is active.`);
     saveState(state);
     document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
     return;
