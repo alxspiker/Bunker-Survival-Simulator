@@ -58,7 +58,7 @@ export function getProductionPerHour(state) {
   const { rooms } = state.bunker;
   const population = state.resources.population;
 
-  if (rooms.garden.status === 'active') perHour.food += 1; // slow grind
+  // Garden no longer passively produces food; growth cycles yield food on completion
   if (rooms.water.status === 'active') perHour.water += 1;
   if (rooms.power.status === 'active') perHour.power += 2;
 

@@ -97,7 +97,8 @@ function TasksCard() {
       const item = document.createElement('div');
       item.className = 'item';
       const left = document.createElement('div');
-      left.innerHTML = `<div><strong>${t.description}</strong></div><div class="small">${formatDuration(remain)}</div>`;
+      const scopeTag = t.scope === 'background' ? '<span class="small">Background</span>' : '<span class="small">Foreground</span>';
+      left.innerHTML = `<div><strong>${t.description}</strong> ${scopeTag}</div><div class="small">${formatDuration(remain)}</div>`;
       const right = document.createElement('div');
       const progress = Math.min(1, (t.durationMs - remain) / t.durationMs);
       const bar = document.createElement('div');
@@ -106,14 +107,17 @@ function TasksCard() {
       span.style.width = `${Math.round(progress * 100)}%`;
       bar.appendChild(span);
 
-      const skip = document.createElement('button');
-      skip.className = 'btn';
-      skip.textContent = 'Skip (Debug)';
-      skip.style.marginLeft = '8px';
-      skip.addEventListener('click', () => forceCompleteTask(t.id));
-
       right.appendChild(bar);
-      right.appendChild(skip);
+
+      if (t.scope !== 'background') {
+        const skip = document.createElement('button');
+        skip.className = 'btn';
+        skip.textContent = 'Skip (Debug)';
+        skip.style.marginLeft = '8px';
+        skip.addEventListener('click', () => forceCompleteTask(t.id));
+        right.appendChild(skip);
+      }
+
       item.append(left, right);
       list.appendChild(item);
     }

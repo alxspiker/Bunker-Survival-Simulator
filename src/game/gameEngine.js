@@ -31,7 +31,7 @@ function processTick(isInitial) {
   state.resources.water += perHour.water * hoursElapsed;
   state.resources.power += perHour.power * hoursElapsed;
 
-  // Process tasks (construction etc.)
+  // Process tasks (construction, planting, crop growth)
   const completed = [];
   for (const task of state.tasks) {
     if (task.endsAt <= now) completed.push(task);
@@ -70,6 +70,29 @@ function applyTaskCompletion(state, task) {
       room.buildEndsAt = null;
       addLog(state, `${capitalize(task.room)} is now operational.`);
     }
+  }
+
+  if (task.type === 'planting') {
+    // Planting complete -> start a background 1-day growth task
+    const now = nowMs();
+    const growthDuration = 24 * 3600_000;
+    state.tasks.push({
+      id: `task_${Math.random().toString(36).slice(2)}`,
+      type: 'crop-growth',
+      scope: 'background',
+      startedAt: now,
+      endsAt: now + growthDuration,
+      durationMs: growthDuration,
+      yield: { food: 5 },
+      description: 'Crops growing (background)',
+    });
+    addLog(state, 'Planting finished. Crops are now growing (1 day).');
+  }
+
+  if (task.type === 'crop-growth') {
+    const yieldFood = task.yield?.food ?? 0;
+    state.resources.food += yieldFood;
+    addLog(state, `Harvest complete. +${yieldFood} food.`);
   }
 }
 

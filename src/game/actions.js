@@ -50,11 +50,23 @@ export function listAvailableActions(state) {
     });
   }
 
+  // Planting seeds is available once the garden is operational
+  if (rooms.garden.status === 'active') {
+    actions.push({
+      key: 'plant_seeds',
+      label: 'Plant Seeds (5m)',
+      description: 'Prepare beds and plant seeds. Starts a 1-day growth cycle (background).',
+      durationMs: 5 * 60_000,
+      cost: { seeds: 1, water: 1 },
+      run: () => schedulePlanting(5 * 60_000, { seeds: 1, water: 1 }),
+    });
+  }
+
   return actions;
 }
 
 export function hasActiveTask(state) {
-  return (state.tasks?.length || 0) > 0;
+  return (state.tasks || []).some(t => (t.scope || 'foreground') === 'foreground');
 }
 
 export function canAfford(state, cost) {
@@ -94,6 +106,7 @@ function scheduleBuild(roomKey, durationMs, cost) {
   const task = {
     id: `task_${Math.random().toString(36).slice(2)}`,
     type: 'build-room',
+    scope: 'foreground',
     room: roomKey,
     startedAt: now,
     endsAt: now + durationMs,
@@ -103,6 +116,37 @@ function scheduleBuild(roomKey, durationMs, cost) {
 
   state.tasks.push(task);
   addLog(state, `Started building ${roomKey}. ETA ${Math.round(durationMs / 60000)}m.`);
+  saveState(state);
+  document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+}
+
+function schedulePlanting(durationMs, cost) {
+  const state = loadState();
+  if (!state) return;
+
+  if (hasActiveTask(state)) {
+    addLog(state, 'You are already working on a task. Only one task can run at a time.');
+    saveState(state);
+    document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
+    return;
+  }
+
+  if (!canAfford(state, cost)) return;
+  const now = nowMs();
+  payCost(state, cost);
+
+  const task = {
+    id: `task_${Math.random().toString(36).slice(2)}`,
+    type: 'planting',
+    scope: 'foreground',
+    startedAt: now,
+    endsAt: now + durationMs,
+    durationMs,
+    description: 'Planting seeds in the garden',
+  };
+
+  state.tasks.push(task);
+  addLog(state, `Started planting. Will finish in ${Math.round(durationMs / 60000)}m.`);
   saveState(state);
   document.dispatchEvent(new CustomEvent('game:tick', { detail: { state } }));
 }
