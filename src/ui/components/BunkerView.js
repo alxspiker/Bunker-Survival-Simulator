@@ -6,6 +6,8 @@ import { DormitoryPanel } from './rooms/DormitoryPanel.js';
 import { OperationsPanel } from './rooms/OperationsPanel.js';
 import { TasksPanel } from './rooms/TasksPanel.js';
 import { Sidebar, getSavedPanel } from './Sidebar.js';
+import { SettingsPanel } from './SettingsPanel.js';
+import { showOnboarding } from '../router.js';
 
 export function renderGame() {
   const wrap = document.createElement('div');
@@ -32,6 +34,7 @@ export function renderGame() {
       key === 'power' ? PowerPanel() :
       key === 'dormitory' ? DormitoryPanel() :
       key === 'tasks' ? TasksPanel() :
+      key === 'settings' ? SettingsPanel({ onReset: () => showOnboarding({ onComplete: () => location.reload() }) }) :
       OperationsPanel();
     content.appendChild(panel);
     // Re-render sidebar to reflect active state and update reference

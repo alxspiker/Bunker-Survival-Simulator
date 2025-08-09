@@ -89,3 +89,13 @@ footer{margin-top:20px;color:var(--muted);font-size:12px}
   .app-layout{grid-template-columns:1fr}
   .sidebar{position:static}
 }
+
+/* Setup page */
+.setup-card{max-width:680px;margin:20px auto;display:flex;flex-direction:column;gap:12px}
+.setup-flex{display:grid;grid-template-columns:1fr;gap:12px}
+.setup-field label{font-size:12px;color:var(--muted);display:block;margin:6px 0}
+.setup-field input,.setup-field select{background:#0b0f14;border:1px solid #1c2430;color:var(--text);padding:10px;border-radius:10px;width:100%}
+@media (min-width:720px){.setup-flex{grid-template-columns:1fr 1fr}}
+
+.btn.bad{background:#3a0f12;color:#ffd4d4;border:1px solid #571a1f}
+.btn.bad:hover{background:#4a1519}

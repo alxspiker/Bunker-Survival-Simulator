@@ -7,6 +7,7 @@ const PANELS = [
   { key: 'power', label: 'Power', icon: '⚡' },
   { key: 'dormitory', label: 'Dormitory', icon: '🛏️' },
   { key: 'operations', label: 'Operations', icon: '🧭' },
+  { key: 'settings', label: 'Settings', icon: '⚙️' },
 ];
 
 export function getSavedPanel() {

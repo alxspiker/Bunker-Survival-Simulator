@@ -45,14 +45,12 @@ export function TasksPanel() {
       bar.appendChild(span);
       right.appendChild(bar);
 
-      if (t.scope !== 'background') {
-        const skip = document.createElement('button');
-        skip.className = 'btn';
-        skip.textContent = 'Skip (Debug)';
-        skip.style.marginLeft = '8px';
-        skip.addEventListener('click', () => forceCompleteTask(t.id));
-        right.appendChild(skip);
-      }
+      const skip = document.createElement('button');
+      skip.className = 'btn';
+      skip.textContent = 'Skip (Debug)';
+      skip.style.marginLeft = '8px';
+      skip.addEventListener('click', () => forceCompleteTask(t.id));
+      right.appendChild(skip);
 
       row.append(left, right);
       body.appendChild(row);

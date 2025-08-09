@@ -2,7 +2,7 @@ import { scenarioList } from '../../game/scenarios.js';
 
 export function Onboarding({ onComplete }) {
   const wrap = document.createElement('div');
-  wrap.className = 'card';
+  wrap.className = 'card setup-card';
 
   const title = document.createElement('h1');
   title.className = 'h';
@@ -10,18 +10,20 @@ export function Onboarding({ onComplete }) {
 
   const subtitle = document.createElement('div');
   subtitle.className = 'small';
-  subtitle.textContent = 'Choose your scenario and enter your name to begin. Progress is real-time and saved in your browser.';
+  subtitle.textContent = 'Choose a scenario and your survivor name. Progress runs in real-time and saves locally.';
 
-  const form = document.createElement('div');
-  form.className = 'grid';
+  const flex = document.createElement('div');
+  flex.className = 'setup-flex';
 
   const nameGroup = document.createElement('div');
+  nameGroup.className = 'setup-field';
   nameGroup.innerHTML = `
-    <label for="name">Name</label>
+    <label for="name">Survivor name</label>
     <input id="name" type="text" placeholder="Your name" />
   `;
 
   const scenarioGroup = document.createElement('div');
+  scenarioGroup.className = 'setup-field';
   const select = document.createElement('select');
   select.id = 'scenario';
   for (const s of scenarioList) {
@@ -30,7 +32,9 @@ export function Onboarding({ onComplete }) {
     opt.textContent = `${s.name}`;
     select.appendChild(opt);
   }
-  scenarioGroup.innerHTML = '<label>Scenario</label>';
+  const scenLabel = document.createElement('label');
+  scenLabel.textContent = 'Scenario';
+  scenarioGroup.appendChild(scenLabel);
   scenarioGroup.appendChild(select);
 
   const desc = document.createElement('div');
@@ -51,14 +55,13 @@ export function Onboarding({ onComplete }) {
     onComplete?.({ name, scenarioKey });
   });
 
-  form.appendChild(nameGroup);
-  form.appendChild(scenarioGroup);
+  flex.appendChild(nameGroup);
+  flex.appendChild(scenarioGroup);
 
   wrap.appendChild(title);
   wrap.appendChild(subtitle);
-  wrap.appendChild(form);
+  wrap.appendChild(flex);
   wrap.appendChild(desc);
-  wrap.appendChild(document.createElement('hr')).className = 'sep';
   wrap.appendChild(start);
 
   return wrap;
